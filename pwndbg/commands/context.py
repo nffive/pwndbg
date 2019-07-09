@@ -119,22 +119,22 @@ def context(subcontext=None):
 
     args = [a[0] for a in args]
 
-    splited_config_outputs= [
-        config_output_regs,
-        config_output_disasm,
-        config_output_args,
-        config_output_code,
-        config_output_stack,
-        config_output_backtrace
-    ]
+    splited_config_outputs= {
+        'r' : config_output_regs,
+        'd' : config_output_disasm,
+        'a' : config_output_args,
+        'c' : config_output_code,
+        's' : config_output_stack,
+        'b' : config_output_backtrace
+    }
 
     tmp_args = args.copy()
-    for a, splited_config_output in zip(tmp_args, splited_config_outputs):
-        if splited_config_output != 'nosplit':
-            func = context_sections.get(a, None)
+    for tmp_arg in tmp_args:
+        if splited_config_outputs[tmp_arg] != 'nosplit':
+            func = context_sections.get(tmp_arg, None)
             if func:
-                _show_context(splited_config_output, func())
-                args.remove(a)
+                _show_context(splited_config_outputs[tmp_arg], func())
+                args.remove(tmp_arg)
 
     result = [M.legend()] if args else []
 
