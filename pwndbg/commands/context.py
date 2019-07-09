@@ -133,7 +133,7 @@ def context(subcontext=None):
         if splited_config_output != 'nosplit':
             func = context_sections.get(a, None)
             if func:
-                _show_context(config_output_regs, func())
+                _show_context(splited_config_output, func())
                 args.remove(a)
 
     result = [M.legend()] if args else []
