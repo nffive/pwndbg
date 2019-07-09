@@ -81,7 +81,7 @@ class StdOutput(object):
     def __exit__(*args, **kwargs):
         pass
 
-def _show_context(config_output_tty, content):
+def show_context(config_output_tty, content):
     with output(config_output_tty) as out:
         if config_clear_screen:
             clear_screen(out)
@@ -136,10 +136,10 @@ def context(subcontext=None):
         if splited_config_outputs[tmp_arg] != 'nosplit':
             func = context_sections.get(tmp_arg, None)
             if func:
-                if splited_config_outputs[tmp_arg] not in splited_output_queue:
-                    splited_output_queue[splited_config_outputs[tmp_arg]] = []
-                splited_output_queue[splited_config_outputs[tmp_arg]].extend(func())
-                # _show_context(splited_config_outputs[tmp_arg], func())
+                tty_key = str(splited_config_outputs[tmp_arg])
+                if tty_key not in splited_output_queue:
+                    splited_output_queue[tty_key] = []
+                splited_output_queue[tty_key].extend(func())
                 args.remove(tmp_arg)
 
     result = [M.legend()] if args else []
@@ -157,9 +157,9 @@ def context(subcontext=None):
         result.append(pwndbg.ui.banner(""))
     result.extend(context_signal())
 
-    _show_context(config_output, result)
+    show_context(config_output, result)
     for tty, content in splited_output_queue.items():
-        _show_context(tty, content)
+        show_context(tty, content)
 
 def context_regs():
     return [pwndbg.ui.banner("registers")] + get_regs()
