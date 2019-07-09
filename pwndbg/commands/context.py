@@ -45,10 +45,15 @@ def clear_screen(out=sys.stdout):
 
 config_clear_screen = pwndbg.config.Parameter('context-clear-screen', False, 'whether to clear the screen before printing the context')
 config_output = pwndbg.config.Parameter('context-output', 'stdout', 'where pwndbg should output ("stdout" or file/tty).')
+config_output_regs = pwndbg.config.Parameter('context-output-regs', 'nosplit', 'where register-context should output ("nosplit" or file/tty).')
+config_output_disasm = pwndbg.config.Parameter('context-output-disasm', 'nosplit', 'where disasm-context should output ("nosplit" or file/tty).')
+config_output_args = pwndbg.config.Parameter('context-output-args', 'nosplit', 'where args-context should output ("nosplit" or file/tty).')
+config_output_code = pwndbg.config.Parameter('context-output-code', 'nosplit', 'where code-context should output ("nosplit" or file/tty).')
+config_output_stack = pwndbg.config.Parameter('context-output-stack', 'nosplit', 'where stack-context should output ("nosplit" or file/tty).')
+config_output_backtrace = pwndbg.config.Parameter('context-output-backtrace', 'nosplit', 'where backtrace-context should output ("nosplit" or file/tty).')
 config_context_sections = pwndbg.config.Parameter('context-sections',
                                                   'regs disasm code stack backtrace',
                                                   'which context sections are displayed (controls order)')
-
 
 @pwndbg.config.Trigger([config_context_sections])
 def validate_context_sections():
@@ -75,12 +80,22 @@ class StdOutput(object):
     def __exit__(*args, **kwargs):
         pass
 
-def output():
+def _show_context(config_output_tty, content):
+    with output(config_output_tty) as out:
+        if config_clear_screen:
+            clear_screen(out)
+
+        for line in content:
+            out.write(line + '\n')
+        out.flush()
+
+
+def output(config_output_tty):
     """Creates a context manager corresponding to configured context ouput"""
-    if not config_output or config_output == "stdout":
+    if not config_output_tty or config_output_tty == "stdout":
         return StdOutput()
     else:
-        return open(str( config_output ), "w")
+        return open(str( config_output_tty ), "w")
 
 # @pwndbg.events.stop
 
@@ -104,6 +119,23 @@ def context(subcontext=None):
 
     args = [a[0] for a in args]
 
+    splited_config_outputs= [
+        config_output_regs,
+        config_output_disasm,
+        config_output_args,
+        config_output_code,
+        config_output_stack,
+        config_output_backtrace
+    ]
+
+    tmp_args = args.copy()
+    for a, splited_config_output in zip(tmp_args, splited_config_outputs):
+        if splited_config_output != 'nosplit':
+            func = context_sections.get(a, None)
+            if func:
+                _show_context(config_output_regs, func())
+                args.remove(a)
+
     result = [M.legend()] if args else []
 
     for arg in args:
@@ -114,14 +146,7 @@ def context(subcontext=None):
         result.append(pwndbg.ui.banner(""))
     result.extend(context_signal())
 
-    with output() as out:
-        if config_clear_screen:
-            clear_screen(out)
-
-        for line in result:
-            out.write(line + '\n')
-        out.flush()
-
+    _show_context(config_output, result)
 
 def context_regs():
     return [pwndbg.ui.banner("registers")] + get_regs()
