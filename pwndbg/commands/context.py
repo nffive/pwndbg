@@ -149,7 +149,7 @@ def context(subcontext=None):
         if func:
             result.extend(func())
 
-    current_tty = os.ttyname(sys.stdout.fileno())
+    current_tty = os.ttyname(1)
     if current_tty in splited_output_queue:
         result.extend(splited_output_queue[current_tty])
         del splited_output_queue[current_tty]
