@@ -10,6 +10,7 @@ import ast
 import codecs
 import ctypes
 import sys
+import os
 from io import open
 
 import gdb
@@ -119,7 +120,7 @@ def context(subcontext=None):
 
     args = [a[0] for a in args]
 
-    splited_config_outputs= {
+    splited_config_outputs = {
         'r' : config_output_regs,
         'd' : config_output_disasm,
         'a' : config_output_args,
@@ -128,12 +129,17 @@ def context(subcontext=None):
         'b' : config_output_backtrace
     }
 
+    splited_output_queue = {}
+
     tmp_args = args.copy()
     for tmp_arg in tmp_args:
         if splited_config_outputs[tmp_arg] != 'nosplit':
             func = context_sections.get(tmp_arg, None)
             if func:
-                _show_context(splited_config_outputs[tmp_arg], func())
+                if splited_config_outputs[tmp_arg] not in splited_output_queue:
+                    splited_output_queue[splited_config_outputs[tmp_arg]] = []
+                splited_output_queue[splited_config_outputs[tmp_arg]].extend(func())
+                # _show_context(splited_config_outputs[tmp_arg], func())
                 args.remove(tmp_arg)
 
     result = [M.legend()] if args else []
@@ -142,11 +148,18 @@ def context(subcontext=None):
         func = context_sections.get(arg, None)
         if func:
             result.extend(func())
+
+    current_tty = os.ttyname(sys.stdout.fileno())
+    if current_tty in splited_output_queue:
+        result.extend(splited_output_queue[current_tty])
+        del splited_output_queue[current_tty]
     if len(result) > 0:
         result.append(pwndbg.ui.banner(""))
     result.extend(context_signal())
 
     _show_context(config_output, result)
+    for tty, content in splited_output_queue.items():
+        _show_context(tty, content)
 
 def context_regs():
     return [pwndbg.ui.banner("registers")] + get_regs()
