@@ -51,6 +51,7 @@ config_output_disasm = pwndbg.config.Parameter('context-output-disasm', 'nosplit
 config_output_args = pwndbg.config.Parameter('context-output-args', 'nosplit', 'where args-context should output ("nosplit" or file/tty).')
 config_output_code = pwndbg.config.Parameter('context-output-code', 'nosplit', 'where code-context should output ("nosplit" or file/tty).')
 config_output_stack = pwndbg.config.Parameter('context-output-stack', 'nosplit', 'where stack-context should output ("nosplit" or file/tty).')
+config_stack_reverse = pwndbg.config.Parameter('context-stack-reverse', False, 'stack-context to reverse output')
 config_output_backtrace = pwndbg.config.Parameter('context-output-backtrace', 'nosplit', 'where backtrace-context should output ("nosplit" or file/tty).')
 config_context_sections = pwndbg.config.Parameter('context-sections',
                                                   'regs disasm code stack backtrace',
@@ -337,6 +338,8 @@ def context_stack():
     result = [pwndbg.ui.banner("stack")]
     telescope = pwndbg.commands.telescope.telescope(pwndbg.regs.sp, to_string=True, count=stack_lines)
     if telescope:
+        if config_stack_reverse:
+            telescope.reverse()
         result.extend(telescope)
     return result
 
